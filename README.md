@@ -5,7 +5,7 @@
 So far there are three projects:
 
 * paintdrops - Paintdrops fall towards the screen, increasing in size until
-the splatter on impact
+they splatter on impact
 * parallel - Generates sets of parallel lines with color gradients
 * sine - One (or more) circle(s) moves (or streaks) across the screen
 
