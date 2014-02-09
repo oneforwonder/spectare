@@ -14,6 +14,9 @@
 (defn rand-color []
   (repeatedly 3 #(rand-int 256)))
 
+(defn rand-color-a []
+  (repeatedly 4 #(rand-int 256)))
+
 (defn +- 
   ([]  (rand-nth [+ -]))
   ([x] ((+-) x)))
