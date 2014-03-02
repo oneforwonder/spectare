@@ -1,31 +1,53 @@
 (ns spectare.grow
-  (:require clisk.patterns)
   (:use spectare.util
         quil.core)
   (:gen-class)) 
 
+;; FPS
+(def FPS 20)
+
+;; Size
 (def WIDTH (min (screen-width) 1920))
 (def HEIGHT (screen-height))
 
-(def FPS 60)
+;; Background
+(def BG-COLOR [0 0 0])
+(def DRAW-BG? true)            ; Re-draw BG between frames, clearing screen
+(def ALTERNATE-BG? false)      ; Alternate BG color between black and white 
 
-(def START-SHAPE :tri)
-(def ALT-SHAPE :circle)
+;; Shapes
+(def SHAPES [:tri :circle])    ; TODO:  Implement
 (def CHANGE-SHAPES? true)
 (def CHANGE-EVERY 160)
-(def START-SIZE 1)
-(def ROTATE? true)
-(def ROTATION-FACTOR 1)
-(def GROWTH-STYLE :mixed)    ; Either :add, :mult, or :mixed
-(def GROWTH-ADD-AMOUNT 2)    ; Used with :add
-(def GROWTH-MULT-RATIO 1.03) ; Used with :mult
-(def FRAMES-BETWEEN-NEW 5)
+
+;; Stroke, fill, opacity
 (def STROKE? true)
+(def FILL? false)             ; TODO: Implement
+(def SIZE-TO-STROKE 40)
 (def OPACITY 255)
 
+;; New shapes
+(def START-SIZE 1)
+(def FRAMES-BETWEEN-NEW 5)
+
+;; Growth
+(def GROWTH-STYLE :mixed)    ; Either :add :mult or :mixed
+(def GROWTH-ADD-AMOUNT 2)    ; Used with :add
+(def GROWTH-MULT-RATIO 1.03) ; Used with :mult
+
+;; Rotation
+(def ROTATE? true)
+(def ROTATION-FACTOR 1)
+
+;; Center movement
+(def MAX-VELOCITY 5)
+(def VEL-TIME-MIN (* 2 FPS)) ; In frames, so this is equal to 2 seconds
+(def VEL-TIME-MAX (* 6 FPS))
+
+;; Stateful variables
 (def frame-num (atom 0))
 (def to-draw (atom []))
-
+(def current-bg-color (atom [0 0 0]))
 (def current-center (atom [(/ WIDTH 2) (/ HEIGHT 2)]))
 (def current-velocity (atom [0 0]))
 (def next-direction-frame (atom 0))
@@ -81,10 +103,15 @@
        (= 0 (mod @frame-num FRAMES-BETWEEN-NEW))))
 
 (defn new-shape []
-  (let [prev-color (or (:color (last @to-draw)) (rand-color))
-        shape      (if (= 1 (mod (quot @frame-num CHANGE-EVERY) 2)) ALT-SHAPE START-SHAPE)
+  (println "uuuu")
+  (let [ prev-color (or (:color (last @to-draw)) (rand-color))
+        shape      (if (= 1 (mod (quot @frame-num CHANGE-EVERY) 2)) :circle :tri)
         shape-fn   ({:circle make-circle :tri make-tri} shape)]
+    (println shape-fn)
     (shape-fn prev-color)))
+
+(defn new-direction? []
+  (= @next-direction-frame @frame-num))
 
 ;; Geometry
 (defn tri-points [height]
@@ -117,11 +144,12 @@
 ;; Quil fns
 (defn setup []
   (no-stroke)
+  (no-fill)
   (color-mode :hsb 256)
   (when STROKE?
     (stroke 0 0 0)
-    (stroke-weight 1))
-  (background 0 0 0)
+    (stroke-weight 4))
+  (apply background BG-COLOR)
   (smooth)
   (frame-rate FPS))
 
@@ -129,12 +157,14 @@
   (let [{:keys [color center size]} c
         [x y] center]
     ;(stroke 0 0 0 (min size 255))
-    (apply fill (concat color [OPACITY]))
+    (stroke-weight (max 2 (/ size SIZE-TO-STROKE)))
+    (apply stroke (concat color [OPACITY]))
     (ellipse x y size size)))
 
 (defn draw-tri! [t]
   (let [{:keys [color center size angle]} t]
-    (apply fill (concat color [OPACITY]))
+    (stroke-weight (max 2 (/ size SIZE-TO-STROKE)))
+    (apply stroke (concat color [OPACITY]))
     (apply triangle (center-tri center (rotate-tri angle (tri-points size))))))
 
 (defn draw-shape! [s]
@@ -144,25 +174,27 @@
 
 (defn draw-bg! []
   (no-stroke)
-  (fill 0 0 0)
+  (apply fill @current-bg-color)
   (rect 0 0 WIDTH HEIGHT))
 
 (defn update []
-  (println (count @to-draw))
+  (when DRAW-BG? (draw-bg!))
   (dorun (map draw-shape! @to-draw))
   (swap! to-draw grow-shapes)
   (swap! to-draw remove-large-shapes)
   (when (new-shape?)
     (swap! current-center move-center)
     (swap! to-draw #(concat % [(new-shape)])))
-  (when (= @next-direction-frame @frame-num)
-    (reset! current-velocity [(+- (rand-int 4)) (+- (rand-int 4))])
-    (reset! next-direction-frame (+ @frame-num (brand-int 90 450))))
+  (when (new-direction?) 
+    (reset! current-velocity [(+- (rand-int MAX-VELOCITY)) (+- (rand-int MAX-VELOCITY))])
+    (reset! next-direction-frame (+ @frame-num (brand-int VEL-TIME-MIN VEL-TIME-MAX))))
+  (when ALTERNATE-BG? 
+    (reset! current-bg-color [0 0 (* 255 (Math/sin (/ @frame-num 50)))]))
   (swap! frame-num inc)) 
 
 (defn -main []
   (defsketch grow
     :title "grow"
     :setup setup
-    :draw update 
+    :draw update
     :size [WIDTH HEIGHT]))

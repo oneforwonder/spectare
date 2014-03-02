@@ -1,16 +1,19 @@
 (ns spectare.paintdrops
   (:use quil.core)) 
 
-(def WIDTH 600)
-(def HEIGHT 400)
-;(def WIDTH (screen-width))
-;(def HEIGHT (screen-height))
+;(def WIDTH 600)
+;(def HEIGHT 400)
+(def WIDTH (screen-width))
+(def HEIGHT (screen-height))
 
 (def RPM 30)  ; avg raindrops per minute
 (def FPS 30)
+(def OPACITY 120)
+(def BG-COLOR [255 255 255])
 
 (def sample-drop {:x 220 :y 110 :size 34 :col [220 80 40] :height 21})
 (def falling-drops (atom []))
+(def fallen-drops (atom []))
 (def frame-num (atom 0))
 
 ;; Color manipulation
@@ -41,7 +44,7 @@
              {:x (+- x hs (rand-int (* 2 hs)))
               :y (+- y hs (rand-int (* 2 hs)))
               :size (+ 5 s)
-              :col (shade col (+ (rand 0.1)))
+              :col (darken col (+ (rand 0.1)))
               :height 0})) splat-sizes)))
 
 (defn splat [d]
@@ -51,7 +54,7 @@
 (defn new-drop []
   {:x (rand-int WIDTH)
    :y (rand-int HEIGHT)
-   :size (+ 18 (rand-int (/ HEIGHT 50)))
+   :size (+ 88 (rand-int (/ HEIGHT 50)))
    :col (repeatedly 3 #(rand-int 256))
    :height 21})
 
@@ -62,7 +65,7 @@
 (defn update-drop [{:keys [height col size] :as d}]
   (when (not= 0 height)
     (assoc d :height (dec height)
-             :size (* size (if (= height 1) 1.2 1.04))
+             :size (* size (if (= height 1) 2.2 0.94))
              :col (lighten col 0.002))))
 
 (defn update-drops [drops]
@@ -72,6 +75,9 @@
        (concat (new-drops))
        (filter identity)))
 
+(defn get-fallen []
+  (filter #(= 0 (:height %)) @falling-drops))
+
 ;; Quil fns
 (defn setup []
   (smooth)
@@ -80,12 +86,20 @@
 (defn draw-drops! [drops]
   (doseq [{:keys [x y size col]} drops]
     (no-stroke)
-    (apply fill col)
+    (apply fill (concat col [OPACITY]))
     (ellipse x y size size)))
 
+(defn draw-bg! []
+  (no-stroke)
+  (apply fill BG-COLOR)
+  (rect 0 0 WIDTH HEIGHT))
+
 (defn update []
+  (draw-bg!)
   (swap! falling-drops update-drops)
+  (swap! fallen-drops #(concat % (get-fallen)))
   (swap! frame-num inc)
+  (draw-drops! @fallen-drops)
   (draw-drops! @falling-drops))
 
 (defn -main []
