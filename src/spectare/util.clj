@@ -1,6 +1,12 @@
 (ns spectare.util)
 
-; Random fns
+;; A little sugar
+(defn map! 
+  "map which allows for side-effecting functions."
+  [& args]
+  (dorun (apply map args)))
+
+;; Random fns
 (defn brand-int 
   "Returns a bounded random integer in range [x,y)"
   [x y]
