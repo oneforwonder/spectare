@@ -5,7 +5,7 @@
   (:gen-class)) 
 
 ;; FPS
-(def FPS 60)
+(def FPS 30)
 
 ;; Size
 (def WIDTH (min (screen-width) 1920))
@@ -18,14 +18,14 @@
 (def ALTERNATE-BG? false)      ; Alternate BG color between black and white 
 
 ;; Shapes
-(def SHAPES [:tri :circle])    ; Valid shapes are :tri and :circle
-(def CHANGE-SHAPES? true)      ; TODO: Implement. Currently always changes.
-(def SHAPE-TIME (* 12 FPS))    ; How long, in frames, between changing shapes
+(def SHAPES [:square :tri :circle]) ; Valid shapes are :tri :circle and :square
+(def CHANGE-SHAPES? true)           ; TODO: Implement. Currently always changes.
+(def SHAPE-TIME (* 6 FPS))          ; How long, in frames, between changing shapes
 
 ;; Stroke, fill, opacity
 (def OUTLINE? true)            ; Whether to draw 1px outline around shapes
 (def OUTLINE-COLOR [0 0 0])
-(def FILL? true)               ; When active, shapes are filled and outline can be used
+(def FILL? false)              ; When active, shapes are filled and outline can be used
 (def SIZE-TO-STROKE 40)        ; If fill is not active, color is moved to thick strokes
 (def OPACITY 255)
 
@@ -87,14 +87,22 @@
   {:shape  :circle
    :center (or center SCREEN-CENTER)
    :color  (or color (rand-hsb-color))
-   :size   (or size START-SIZE)})
+   :size   (or size START-SIZE)}) ; diameter
 
 (defn make-tri
   [{:keys [center color size angle]}]
   {:shape  :tri
    :center (or center SCREEN-CENTER)
    :color  (or color (rand-hsb-color))
-   :size   (or size START-SIZE)
+   :size   (or size START-SIZE) ; height
+   :angle  (or angle 0)})
+
+(defn make-square
+  [{:keys [center color size angle]}]
+  {:shape  :square
+   :center (or center SCREEN-CENTER)
+   :color  (or color (rand-hsb-color))
+   :size   (or size START-SIZE) ; length of side
    :angle  (or angle 0)})
 
 (defn grow-shape [s]
@@ -112,7 +120,8 @@
   (remove (fn [s]
             (case (:shape s)
               :circle (> (:size s) (* 1.6 WIDTH))
-              :tri    (> (:size s) (* 2.8 WIDTH)))) ss))
+              :tri    (> (:size s) (* 2.8 WIDTH))
+              :square (> (:size s) (* 1.6 WIDTH)))) ss))
 
 ;; Stateful functions
 (defn angle []
@@ -126,7 +135,7 @@
 
 (defn new-shape []
   (let [shape      (nth SHAPES (mod (quot @frame-num SHAPE-TIME) (count SHAPES)))
-        shape-fn   ({:circle make-circle :tri make-tri} shape)
+        shape-fn   ({:circle make-circle :tri make-tri :square make-square} shape)
         prev-color (or (:color (last @current-shapes)) (rand-color)) 
         options    {:color (shift-hsb-hue prev-color)
                     :center @current-center
@@ -170,10 +179,21 @@
                          (geo/rotate-tri angle)
                          (geo/center-tri center)))))
 
+(defn draw-square! [s]
+  (let [{:keys [color center size angle]} s
+        [cx cy] center
+        sq-ps (->> (geo/centered-square size)
+                   (geo/rotate-square angle)
+                   (geo/center-square center))]
+    (set-fill-and-stroke! color size)
+    (println sq-ps)
+    (apply quad sq-ps)))
+
 (defn draw-shape! [s]
   (case (:shape s)
     :circle (draw-circle! s)
-    :tri    (draw-tri! s)))
+    :tri    (draw-tri! s)
+    :square (draw-square! s)))
 
 (defn draw-bg! []
   (no-stroke)
