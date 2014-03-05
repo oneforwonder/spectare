@@ -40,10 +40,9 @@
         p2 (rand-pos)
         dt (brand-int 5 10)
         dx (+- (rand-int dt))
-        dy (+- (- dt dx))
-        ;dy (+- (- dt (abs dx)))
+        dy (+- (- dt (abs dx)))
         ac (* 0.67 AVG-LINE-COLL-COUNT)
-        n  (+ ac (rand-int ac))] ; avg +/- a third
+        n  (+ ac (rand-int ac))] ; Ranges from 2/3 avg to 4/3 avg
     (filter on-screen? (map #(make-line c1 c2 p1 p2 dx dy % n) (range n)))))
 
 ;; Quil fns
