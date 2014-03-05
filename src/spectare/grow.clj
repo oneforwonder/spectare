@@ -67,17 +67,6 @@
   [(+- (rand VEL-COMP-MAX)) (+- (rand VEL-COMP-MAX))])
 
 ;; Shapes
-(defn shift-hsb-hue 
-  "Given a HSB color, creates a color of similar (but not equal) hue.
-  This function can shift the hue forward or backwards through the hue spectrum
-  but is weighted towards moving forward, so that repeated calls to the this
-  function will create a variety of colors, not stay in the same place."
-  [color]
-  (-> (first color)                 ; hue component
-      (+ (+- (brand-int 10 30)) 5)  ; +5 weights fn towards moving forward
-      (mod 256)
-      (vector 255 180)))
-
 (defn make-circle
   [{:keys [center color size]}]
   {:shape  :circle

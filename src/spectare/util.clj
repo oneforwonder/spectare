@@ -35,6 +35,18 @@
   []
   [(rand-int 256) 255 200])
 
+(defn shift-hsb-hue 
+  "Given a HSB color, creates a color of similar (but not equal) hue.
+  This function can shift the hue forward or backwards through the hue spectrum
+  but is weighted towards moving forward, so that repeated calls to the this
+  function will create a variety of colors, not stay in the same place."
+  ;; TODO: Parameterize how much to shift
+  [color]
+  (-> (first color)                 ; hue component
+      (+ (+- (brand-int 10 30)) 5)  ; +5 weights fn towards moving forward
+      (mod 256)
+      (vector 255 180)))
+
 (defn gradient 
   "percent=0.0: c1; percent=1.0: c2; 0.0 < percent < 1.0: a blend"
   [c1 c2 percent]

@@ -1,19 +1,21 @@
 (ns spectare.geometry)
 
+;; Points
+(defn rotate-point [degrees [x y]]
+  (let [rad (/ (* degrees Math/PI) 180)
+        sin (Math/sin rad)
+        cos (Math/cos rad)]
+    [(- (* x cos) (* y sin))
+     (+ (* x sin) (* y cos))]))
+
 ;; Polygon
-(defn center-poly [[cx cy] points]
-  (let [xs (take-nth 2 points) 
-        ys (take-nth 2 (drop 1 points))]
+(defn center-poly [[cx cy] coords]
+  (let [xs (take-nth 2 coords) 
+        ys (take-nth 2 (drop 1 coords))]
     (interleave (map #(+ cx %) xs) (map #(+ cy %) ys))))
 
-(defn rotate-poly [degrees points]
-  (let [pairs (partition 2 points) 
-        rad   (/ (* degrees Math/PI) 180)
-        sin   (Math/sin rad)
-        cos   (Math/cos rad)]
-    (mapcat (fn [[x y]] 
-              [(- (* x cos) (* y sin))
-               (+ (* x sin) (* y cos))]) pairs)))
+(defn rotate-poly [degrees coords]
+  (mapcat #(rotate-point degrees %) (partition 2 coords)))
 
 ;; Triangles
 (defn centered-equilateral-tri 
