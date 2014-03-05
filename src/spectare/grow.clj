@@ -35,7 +35,7 @@
 
 ;; Growth
 (def GROWTH-STYLE :mixed)      ; Either :add :mult or :mixed
-(def GROWTH-ADD-AMOUNT 2)      ; Used with :add
+(def GROWTH-ADD-AMOUNT 1)      ; Used with :add
 (def GROWTH-MULT-RATIO 1.03)   ; Used with :mult
 
 ;; Rotation
@@ -43,10 +43,9 @@
 (def ROTATION-FACTOR 1)
 
 ;; Center movement
-(def MAX-VELOCITY 5)
-(def MOVE-CENTER? true)      ; TODO: Implement. Currently always moves.
-(def VEL-COMP-MIN 3.0)       ; Real number, in pixels/frame, for each velocity component 
-(def VEL-TIME-MIN (* 2 FPS)) ; In frames
+(def MOVE-CENTER? true)
+(def VEL-COMP-MAX 0.7)         ; In pixels/frame, for each velocity component
+(def VEL-TIME-MIN (* 2 FPS))   ; In frames
 (def VEL-TIME-MAX (* 6 FPS))
 
 ;; Stateful variables
@@ -59,18 +58,15 @@
 
 ;; Environment
 (defn move-center [center]
-  (map + center @current-velocity))
+  (let [[cx cy] center
+        [vx vy] @current-velocity]
+    [(-> (+ cx vx) (max 0) (min WIDTH))
+     (-> (+ cy vy) (max 0) (min HEIGHT))]))
 
 (defn rand-center-velocity []
-  [(+- (rand MAX-VELOCITY)) (+- (rand MAX-VELOCITY))])
+  [(+- (rand VEL-COMP-MAX)) (+- (rand VEL-COMP-MAX))])
 
 ;; Shapes
-(defn rand-hsb-color 
-  "Generates a HSB color of random hue, full saturation, and high brightness.
-  The fixed saturation and brightness were chosen to make vivid, pretty colors."
-  []
-  [(rand-int 256) 255 180])
-
 (defn shift-hsb-hue 
   "Given a HSB color, creates a color of similar (but not equal) hue.
   This function can shift the hue forward or backwards through the hue spectrum
@@ -86,14 +82,14 @@
   [{:keys [center color size]}]
   {:shape  :circle
    :center (or center SCREEN-CENTER)
-   :color  (or color (rand-hsb-color))
+   :color  (or color (rand-vivid-hsb-color))
    :size   (or size START-SIZE)}) ; diameter
 
 (defn make-tri
   [{:keys [center color size angle]}]
   {:shape  :tri
    :center (or center SCREEN-CENTER)
-   :color  (or color (rand-hsb-color))
+   :color  (or color (rand-vivid-hsb-color))
    :size   (or size START-SIZE) ; height
    :angle  (or angle 0)})
 
@@ -101,7 +97,7 @@
   [{:keys [center color size angle]}]
   {:shape  :square
    :center (or center SCREEN-CENTER)
-   :color  (or color (rand-hsb-color))
+   :color  (or color (rand-vivid-hsb-color))
    :size   (or size START-SIZE) ; length of side
    :angle  (or angle 0)})
 
@@ -136,7 +132,7 @@
 (defn new-shape []
   (let [shape      (nth SHAPES (mod (quot @frame-num SHAPE-TIME) (count SHAPES)))
         shape-fn   ({:circle make-circle :tri make-tri :square make-square} shape)
-        prev-color (or (:color (last @current-shapes)) (rand-color)) 
+        prev-color (or (:color (last @current-shapes)) (rand-vivid-hsb-color)) 
         options    {:color (shift-hsb-hue prev-color)
                     :center @current-center
                     :angle (angle)}]
@@ -176,18 +172,16 @@
   (let [{:keys [color center size angle]} t]
     (set-fill-and-stroke! color size)
     (apply triangle (->> (geo/centered-equilateral-tri size)
-                         (geo/rotate-tri angle)
-                         (geo/center-tri center)))))
+                         (geo/rotate-poly angle)
+                         (geo/center-poly center)))))
 
 (defn draw-square! [s]
   (let [{:keys [color center size angle]} s
-        [cx cy] center
-        sq-ps (->> (geo/centered-square size)
-                   (geo/rotate-square angle)
-                   (geo/center-square center))]
+        [cx cy] center]
     (set-fill-and-stroke! color size)
-    (println sq-ps)
-    (apply quad sq-ps)))
+    (apply quad (->> (geo/centered-square size)
+                     (geo/rotate-poly angle)
+                     (geo/center-poly center)))))
 
 (defn draw-shape! [s]
   (case (:shape s)
@@ -211,13 +205,14 @@
   (swap! current-shapes grow-shapes)
   (swap! current-shapes remove-large-shapes)
   (when (new-shape?)
-    (swap! current-center move-center)
     (swap! current-shapes #(concat % [(new-shape)])))
 
   ;; Update environment
-  (when (new-velocity?) 
-    (reset! current-velocity (rand-center-velocity))
-    (reset! next-velocity-frame (+ @frame-num (brand-int VEL-TIME-MIN VEL-TIME-MAX))))
+  (when MOVE-CENTER?
+    (swap! current-center move-center)
+    (when (new-velocity?) 
+      (reset! current-velocity (rand-center-velocity))
+      (reset! next-velocity-frame (+ @frame-num (brand-int VEL-TIME-MIN VEL-TIME-MAX)))))
   (when ALTERNATE-BG? 
     (reset! current-bg-color [0 0 (* 255 (Math/sin (/ @frame-num 50)))]))
   (swap! frame-num inc)) 

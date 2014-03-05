@@ -12,24 +12,31 @@
   [x y]
   (+ x (rand-int (- y x))))
 
-(defn brand-color []
-  [(brand-int 80 256)
-   (brand-int 0 160)
-   (brand-int 40 220)])
-
-(defn rand-color []
-  (repeatedly 3 #(rand-int 256)))
-
-(defn rand-color-a []
-  (repeatedly 4 #(rand-int 256)))
-
 (defn +- 
   ([]  (rand-nth [+ -]))
   ([x] ((+-) x)))
 
 ;; Color fns
+(defn rand-rgb-color []
+  (repeatedly 3 #(rand-int 256)))
+
+(defn rand-rgba-color []
+  (repeatedly 4 #(rand-int 256)))
+
+(defn rand-hsb-color []
+  (repeatedly 3 #(rand-int 256)))
+
+(defn rand-hsba-color []
+  (repeatedly 4 #(rand-int 256)))
+
+(defn rand-vivid-hsb-color 
+  "Generates a HSB color of random hue, full saturation, and high brightness.
+  The fixed saturation and brightness were chosen to make vivid, pretty colors."
+  []
+  [(rand-int 256) 255 200])
+
 (defn gradient 
-  "percent=0.0 -> c1; percent=1.0 -> c2; 0.0 < percent < 1.0 -> a blend"
+  "percent=0.0: c1; percent=1.0: c2; 0.0 < percent < 1.0: a blend"
   [c1 c2 percent]
   (map (fn [cc1 cc2] (+ 0.0 cc1 (* percent (- cc2 cc1)))) c1 c2))
 
