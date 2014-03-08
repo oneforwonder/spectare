@@ -34,8 +34,8 @@
    :col (gradient c1 c2 (/ i n))})
 
 (defn make-lines []
-  (let [c1 (rand-color)
-        c2 (rand-color)
+  (let [c1 (rand-rgb-color)
+        c2 (rand-rgb-color)
         p1 (rand-pos)
         p2 (rand-pos)
         dt (brand-int 5 10)
@@ -53,15 +53,9 @@
   (frame-rate FPS))
 
 (defn draw-line! [{:keys [x1 y1 x2 y2 col]} alpha] 
-  (let [c* (if (= alpha 200) 
-             [255 255 255] 
-             (map #(* % (/ alpha 255)) col))]
-    (when (= alpha 199)
-      (println "Col:" col)
-      (println "C*:" c*))
-    (stroke-weight LINE-THICKNESS)
-    (apply stroke c*)
-    (line x1 y1 x2 y2)))
+  (stroke-weight LINE-THICKNESS)
+  (apply stroke (concat col [alpha]))
+  (line x1 y1 x2 y2))
 
 (defn draw-bg! []
   (no-stroke)
