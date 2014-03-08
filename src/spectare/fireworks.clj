@@ -6,11 +6,12 @@
 (def WIDTH (min (screen-width) 1920))
 (def HEIGHT (screen-height))
 
-(def LENGTH 20)
+(def FPS 10)
+
+(def SPIN? false)
+(def LENGTH 20.0)
 (def LINE-THICKNESS 2)
 (def RING-COUNT 7)
-
-(def FPS 10)
 
 (def frame-num (atom 0))
 
@@ -20,13 +21,13 @@
 
 (defn make-line [color [cx cy] degrees ring-num]
   (let [[dx dy] (geo/rotate-point degrees [LENGTH 0])]
-    {:x1 (+ cx (* dx (* 1.1 ring-num)))
-     :y1 (+ cy (* dy (* 1.1 ring-num)))
+    {:x1 (+ cx (* dx (* 1.04 ring-num)))
+     :y1 (+ cy (* dy (* 1.04 ring-num)))
      :x2 (+ cx (* dx (inc ring-num)))
      :y2 (+ cy (* dy (inc ring-num)))
      :col color}))
 
-(defn make-ring [n]
+(defn make-burst [n]
   (let [center   (rand-pos)
         base-col (rand-vivid-hsb-color)
         colors   (iterate shift-hsb-hue base-col)]
@@ -34,9 +35,25 @@
       (for [degrees (range 0 360 (- 5 (* 0.5 ring-num)))]
         (make-line (nth colors ring-num) center degrees ring-num))))) 
 
+(defn make-burst-data []
+  (let [center   (rand-pos)
+        base-col (rand-vivid-hsb-color)
+        colors   (iterate shift-hsb-hue base-col)]
+    (for [ring-num (range RING-COUNT)]
+      (for [degrees (range 0 360 (- 5 (* 0.5 ring-num)))]
+        {:col (nth colors ring-num)
+         :center center
+         :degrees degrees
+         :ring-num ring-num}))))
+
+(defn make-line-from-data [data]
+  (let [{:keys [col center degrees ring-num]} data]
+    (make-line col center degrees ring-num)))
+
 ;; Quil fns
 (defn setup []
-  (def rings (mapcat make-ring (range)))
+  (def rings (mapcat make-burst (range)))
+  (def burst-data (make-burst-data))
   (color-mode :hsb 256)
   (background 0 0 0)
   (smooth)
@@ -47,20 +64,36 @@
   (apply stroke col)
   (line x1 y1 x2 y2))
 
-(defn draw-bg! []
+(defn draw-bg! [alpha]
   (no-stroke)
-  (fill 0 0 0 80)
+  (fill 0 0 0 alpha)
   (rect 0 0 WIDTH HEIGHT))
 
-(defn update []
-  (draw-bg!)
+(defn update-flashing []
+  (draw-bg! 80)
   (doseq [l (nth rings @frame-num)]
     (draw-line! l))
+  (swap! frame-num inc))
+
+(defn update []
+  (draw-bg! 255)
+  (doseq [ring-data burst-data]
+    (let [rotate-factor (case (mod (:ring-num (first ring-data)) 2) 0 -1 1 1)
+          rotated-lines (map (fn [line-data] 
+                               (let [d (:degrees line-data)] 
+                                 (assoc line-data :degrees (+ d (* @frame-num rotate-factor 0.5))))) ring-data)
+          colored-lines (map (fn [line-data change?]
+                               (let [c (:col line-data)
+                                     b (last c)]
+                                 (assoc line-data :col (if change? (assoc c 2 (- b 80)) c)))) 
+                             rotated-lines (cycle [true false]))]
+      (doseq [l (map make-line-from-data colored-lines)]
+        (draw-line! l))))
   (swap! frame-num inc))
 
 (defn -main []
   (defsketch fireworks
     :title "fireworks"
     :setup setup
-    :draw update
+    :draw (if SPIN? update update-flashing)
     :size [WIDTH HEIGHT]))
