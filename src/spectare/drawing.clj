@@ -16,7 +16,7 @@
   {:p1  (rand-pos)
    :p2  (rand-pos)
    :p3  (rand-pos)
-   :col (rand-color-a)})
+   :col (rand-rgba-color)})
 
 ;; Quil fns
 (defn setup []
