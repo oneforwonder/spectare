@@ -27,15 +27,7 @@
      :y2 (+ cy (* dy (inc ring-num)))
      :col color}))
 
-(defn make-burst [n]
-  (let [center   (rand-pos)
-        base-col (rand-vivid-hsb-color)
-        colors   (iterate shift-hsb-hue base-col)]
-    (for [ring-num (range RING-COUNT)]
-      (for [degrees (range 0 360 (- 5 (* 0.5 ring-num)))]
-        (make-line (nth colors ring-num) center degrees ring-num))))) 
-
-(defn make-burst-data []
+(defn make-burst-data [n]
   (let [center   (rand-pos)
         base-col (rand-vivid-hsb-color)
         colors   (iterate shift-hsb-hue base-col)]
@@ -52,8 +44,8 @@
 
 ;; Quil fns
 (defn setup []
-  (def rings (mapcat make-burst (range)))
-  (def burst-data (make-burst-data))
+  (def rings (mapcat make-burst-data (range)))
+  (def burst-data (make-burst-data 0))
   (color-mode :hsb 256)
   (background 0 0 0)
   (smooth)
@@ -72,7 +64,7 @@
 (defn update-flashing []
   (draw-bg! 80)
   (doseq [l (nth rings @frame-num)]
-    (draw-line! l))
+    (draw-line! (make-line-from-data l)))
   (swap! frame-num inc))
 
 (defn update []
