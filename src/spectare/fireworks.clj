@@ -67,7 +67,7 @@
     (draw-line! (make-line-from-data l)))
   (swap! frame-num inc))
 
-(defn update []
+(defn update-spinning []
   (draw-bg! 255)
   (doseq [ring-data burst-data]
     (let [rotate-factor (case (mod (:ring-num (first ring-data)) 2) 0 -1 1 1)
@@ -87,5 +87,5 @@
   (defsketch fireworks
     :title "fireworks"
     :setup setup
-    :draw (if SPIN? update update-flashing)
+    :draw (if SPIN? update-spinning update-flashing)
     :size [WIDTH HEIGHT]))

@@ -6,9 +6,9 @@
 (def WIDTH (min (screen-width) 1920))
 (def HEIGHT (screen-height))
 
+(def ROOT-COUNT 8)
 (def ROOT-LENGTH 128)
 (def ROOT-WEIGHT 8)
-(def ROOT-COUNT 8)
 (def ROOT-COLOR [0 0 255])
 
 (def NUM-GENS 11)
