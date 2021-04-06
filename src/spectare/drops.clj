@@ -1,5 +1,5 @@
-(ns spectare.paintdrops
-  (:require quil.core :refer :all)) 
+(ns spectare.drops
+  (:use quil.core)) 
 
 ;(def WIDTH 600)
 ;(def HEIGHT 400)
@@ -103,7 +103,7 @@
   (draw-drops! @falling-drops))
 
 (defn -main []
-  (defsketch raindrops
+  (defsketch drops
     :title "Raindrops"
     :setup setup
     :draw update

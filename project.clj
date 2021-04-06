@@ -8,4 +8,4 @@
                  [net.mikera/clisk "0.8.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
                  [prismofeverything/penumbra "0.6.12"]]
-  :main spectare.grow)
+  :main spectare.paintdrops)
